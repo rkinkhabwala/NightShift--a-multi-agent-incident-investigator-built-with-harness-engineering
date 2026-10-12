@@ -26,12 +26,12 @@ prom_value() {
     | jq -r '.data.result[0].value[1] // empty'
 }
 
-# loki_count <logql> [since-seconds] : number of log lines matching in the window.
+# loki_count <logql> [since-seconds] : number of log lines matching in the window. Uses a
+# count_over_time metric query so large (stack-trace) lines never have to be transferred.
 loki_count() {
   local since=${2:-300}
-  curl -sf -m 30 -G "$LOKI_URL/loki/api/v1/query_range" --data-urlencode "query=$1" \
-    --data-urlencode "start=$(( $(date +%s) - since ))000000000" --data-urlencode "limit=5000" \
-    | jq '[.data.result[].values | length] | add // 0'
+  curl -sf -m 30 -G "$LOKI_URL/loki/api/v1/query" --data-urlencode "query=sum(count_over_time($1 [${since}s]))" \
+    | jq -r '(.data.result[0].value[1] // "0") | tonumber | floor'
 }
 
 # tempo_count <traceql> [since-seconds] : number of traces matching in the window.

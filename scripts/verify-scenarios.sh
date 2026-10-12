@@ -12,7 +12,7 @@ source scripts/lib/common.sh
 curl() { command curl --max-time 30 "$@"; }
 
 GRACE=${GRACE:-180}            # extra seconds allowed beyond settle_seconds for signals to appear
-BASELINE_TIMEOUT=${BASELINE_TIMEOUT:-480}
+BASELINE_TIMEOUT=${BASELINE_TIMEOUT:-720}   # ServiceRestarting needs its 10 m window to clear after S04
 OUT=scripts/out; mkdir -p "$OUT"
 declare -a RESULTS=()
 

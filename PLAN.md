@@ -227,3 +227,22 @@ Alternative: a hidden switch that makes payments return 503 from its charge hand
 - Annotations come from Loki events instead of the Infinity plugin.
 
 **Q7. Spring Boot 3.5.x has left free OSS support.** OK to stay on 3.5.x as you specified, or move to Boot 4? *Recommended:* stay on 3.5.x (your instruction), noted in the README.
+
+---
+
+## 9. Deviations found while building (recorded after the fact)
+
+| Area | Planned | Built | Why |
+|---|---|---|---|
+| Restart signal | `resets()` on HTTP counters with a fixed `service.instance.id` | `process_start_time_seconds`, bridged from Micrometer; Spring's other Micrometer meters are disabled | A fresh JVM's CPU and class counters start close to the old values, so resets were invisible |
+| ServiceRestarting | ≥ 2 starts in 15 m per service | ≥ 2 starts of the **same version** in 10 m | Deploys and rollbacks no longer fire it |
+| Fault switches | pulled every 2 s | pushed by the chaos controller, fetched on registration (survive restarts) | Polling would put a span every 2 s from every service into Tempo |
+| Chaos telemetry | agent attached | chaos controller runs with `OTEL_JAVAAGENT_ENABLED=false` | Injection activity must not be visible to agents |
+| Annotations | Loki events | Grafana's built-in Postgres datasource over `ops.deploys` / `ops.settings_history` | Follows from the row above; also the source of truth. No plugin needed |
+| S02 | pool 10 → 1 | pool 10 → 1 **plus** orders' 10 s sales-report job (about 1 s per run) | At 8 req/s queries hold a connection for about 1 ms, so pool 1 alone had no effect |
+| S04 leak | 64 KB per reservation | 256 KB per reserved item (one OOM cycle about every 90 s) | 64 KB took more than 10 minutes per cycle near full heap |
+| S05 query | whole-history aggregate per order | unindexed co-purchase aggregate per order line (orders p95 about 0.5 s, no errors) | The whole-history version saturated Postgres and turned into an outage |
+| S07 | timeout 40 ms | timeout 5 ms (config minimum lowered to 1) | Inventory answers in about 10 ms |
+| HighLatencyP95 | > 1 s for 2 m | > 300 ms for 2 m | Baseline p95 is about 45 ms; S05 sits around 0.5 s |
+| JvmHeapHigh | > 85 % for 1 m | max over 2 m > 90 % | During a fast OOM loop the heap is high for only about 20 s at a time |
+| Memory limits | lgtm 1.75 GB, Alertmanager 48 MB | lgtm 2 GB, Alertmanager 64 MB | Both peaked close to their limits (lgtm mostly reclaimable page cache) |
