@@ -1,0 +1,33 @@
+# Secrets / local env
+.env
+*.pem
+*.key
+
+# Java / Maven
+target/**/target/
+*.class
+*.jar
+hs_err_pid*.log
+
+# Python (later phases)
+__pycache__/
+.venv/
+*.pyc
+.pytest_cache/
+
+# Node (later phases)
+node_modules/
+web/dist/
+
+# Runtime data
+*.sqlite
+*.db
+evals/results/*
+!evals/results/.gitkeep
+scripts/out/
+
+# Editors / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store

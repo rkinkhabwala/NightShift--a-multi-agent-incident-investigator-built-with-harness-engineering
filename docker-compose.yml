@@ -1,0 +1,9 @@
+# NightShift local stack.
+# Profiles:
+#   target     — Spring Boot services, Postgres, Redis, Toxiproxy, chaos controller, k6 load
+#   telemetry  — grafana/otel-lgtm (OTel Collector + Prometheus + Loki + Tempo + Grafana)
+#   nightshift — harness/API/UI (Phase 2+; empty for now)
+# Every container has a mem_limit; the total must stay well inside Docker Desktop's 6 GB.
+name: nightshift
+
+services: {}
