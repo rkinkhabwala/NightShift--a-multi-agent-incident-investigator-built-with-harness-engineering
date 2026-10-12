@@ -1,0 +1,22 @@
+spring:
+  config:
+    import: classpath:nightshift-common.yml
+  application:
+    default-name: inventory
+  datasource:
+    # Through Toxiproxy (pg-inventory) so S08 can slow this service's database alone.
+    url: jdbc:postgresql://${DB_HOST:toxiproxy}:${DB_PORT:15433}/${POSTGRES_DB:nightshift}
+    username: ${POSTGRES_USER:nightshift}
+    password: ${POSTGRES_PASSWORD:}
+    hikari:
+      maximum-pool-size: 6
+      minimum-idle: 2
+      connection-timeout: 3000
+  data:
+    redis:
+      # Through Toxiproxy (redis) so S03 can add latency.
+      host: ${REDIS_HOST:toxiproxy}
+      port: ${REDIS_PORT:16379}
+      timeout: 5s
+server:
+  port: 8083

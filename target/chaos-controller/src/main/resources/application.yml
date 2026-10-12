@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: chaos-controller
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${POSTGRES_DB:nightshift}
+    username: ${POSTGRES_USER:nightshift}
+    password: ${POSTGRES_PASSWORD:}
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
+logging:
+  structured:
+    format:
+      console: logstash
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+server:
+  port: 8090
+nightshift:
+  releases-dir: ${RELEASES_DIR:/releases}

@@ -26,6 +26,21 @@ x-jvm-service: &jvm-service
     OTEL_BSP_SCHEDULE_DELAY: "2000"
     OTEL_BLRP_SCHEDULE_DELAY: "2000"
     OTEL_INSTRUMENTATION_MICROMETER_ENABLED: "true"
+    OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_CAPTURE_KEY_VALUE_PAIR_ATTRIBUTES: "true"
+    POSTGRES_USER: ${POSTGRES_USER:-nightshift}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
+    POSTGRES_DB: ${POSTGRES_DB:-nightshift}
+  healthcheck:
+    test: ["CMD-SHELL", "curl -sf http://localhost:$${SERVER_PORT}/actuator/health/readiness || exit 1"]
+    interval: 10s
+    timeout: 3s
+    retries: 12
+    start_period: 30s
+  depends_on: &jvm-deps
+    postgres:
+      condition: service_healthy
+    toxiproxy:
+      condition: service_started
 
 services:
   lgtm:
@@ -47,15 +62,111 @@ services:
       - ./telemetry/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro
       - lgtm-data:/data
 
+  # --- target: data stores and network fault proxy --------------------------------------------
+  postgres:
+    image: postgres:16.15-alpine
+    profiles: [target]
+    mem_limit: 256m
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nightshift}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-nightshift}
+    command: >-
+      postgres -c shared_buffers=64MB -c max_connections=60 -c work_mem=4MB
+      -c max_parallel_workers_per_gather=0 -c log_min_duration_statement=1000
+    volumes:
+      - ./target/db/init:/docker-entrypoint-initdb.d:ro
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    image: redis:7.4.11-alpine
+    profiles: [target]
+    mem_limit: 64m
+    command: redis-server --maxmemory 32mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    profiles: [target]
+    mem_limit: 48m
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ./chaos/toxiproxy.json:/config/toxiproxy.json:ro
+    ports:
+      - "127.0.0.1:8474:8474"
+    depends_on:
+      - redis
+      - postgres
+
+  # --- target: chaos controller / ops API -----------------------------------------------------
+  chaos-controller:
+    <<: *jvm-service
+    mem_limit: 320m
+    environment:
+      <<: *jvm-env
+      SERVICE: chaos-controller
+      SERVER_PORT: "8090"
+      BASELINE_VERSION: "1.0"
+      JAVA_OPTS: >-
+        -Xms64m -Xmx128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m
+        -Xss512k -XX:+UseSerialGC
+    volumes:
+      - releases:/releases
+      - ./evals/scenarios:/scenarios:ro
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- target: services (request path gateway -> orders -> payments -> inventory) -------------
   gateway:
     <<: *jvm-service
     environment:
       <<: *jvm-env
       SERVICE: gateway
+      SERVER_PORT: "8080"
       BASELINE_VERSION: "2.0"
     ports:
       - "8080:8080"
 
+  orders:
+    <<: *jvm-service
+    environment:
+      <<: *jvm-env
+      SERVICE: orders
+      SERVER_PORT: "8081"
+      BASELINE_VERSION: "3.1"
+    ports:
+      - "127.0.0.1:8081:8081"
+
+  payments:
+    <<: *jvm-service
+    environment:
+      <<: *jvm-env
+      SERVICE: payments
+      SERVER_PORT: "8082"
+      BASELINE_VERSION: "1.3"
+    ports:
+      - "127.0.0.1:8082:8082"
+
+  inventory:
+    <<: *jvm-service
+    environment:
+      <<: *jvm-env
+      SERVICE: inventory
+      SERVER_PORT: "8083"
+      BASELINE_VERSION: "2.2"
+    ports:
+      - "127.0.0.1:8083:8083"
+
 volumes:
   releases:
   lgtm-data:
+  pg-data:

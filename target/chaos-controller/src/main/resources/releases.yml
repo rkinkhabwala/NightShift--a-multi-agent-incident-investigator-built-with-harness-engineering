@@ -1,0 +1,26 @@
+# Release manifest: every version a service can be deployed to, with its changelog.
+# The code differences live in the services themselves (version-gated at startup).
+services:
+  gateway:
+    port: 8080
+    baseline: "2.0"
+    versions:
+      "2.0": "Baseline release."
+  orders:
+    port: 8081
+    baseline: "3.1"
+    versions:
+      "3.1": "Baseline release."
+  payments:
+    port: 8082
+    baseline: "1.3"
+    versions:
+      "1.3": "Baseline release."
+      "1.4": "Loyalty discounts: apply per-tier promotional multiplier; refactor discount calculation."
+  inventory:
+    port: 8083
+    baseline: "2.2"
+    versions:
+      "2.2": "Baseline release."
+      "2.3": "Logging: structured key=value format for reservation log lines."
+      "2.4": "Schema clean-up: rename reservations.qty to qty_reserved in the repository layer."

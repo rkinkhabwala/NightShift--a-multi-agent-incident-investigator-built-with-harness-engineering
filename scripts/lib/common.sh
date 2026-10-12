@@ -44,3 +44,25 @@ tempo_count() {
 
 # gt <a> <b> : numeric a > b (empty a counts as false).
 gt() { [ -n "$1" ] && awk -v a="$1" -v b="$2" 'BEGIN{exit !(a>b)}'; }
+
+# order <customerId> [sku] [qty] : POST an order through the gateway; prints "<status> <body>".
+order() {
+  local body
+  body=$(printf '{"customerId":%s,"items":[{"sku":"%s","qty":%s}]}' "$1" "${2:-SKU-001}" "${3:-1}")
+  curl -s -m 15 -o /dev/stderr -w '%{http_code}' -H 'Content-Type: application/json' -d "$body" \
+    "$GATEWAY_URL/api/orders" 2>/dev/null
+}
+
+# service_version <service> : version the deploy registry reports as current (COMPLETED).
+service_version() {
+  curl -sf "$CHAOS_URL/ops/services" | jq -r --arg s "$1" '.[$s] | select(.deployStatus=="COMPLETED") | .version'
+}
+
+# deploy <service> <version> [by] : release a version and wait until the service runs it.
+deploy() {
+  curl -sf -H 'Content-Type: application/json' -d "{\"version\":\"$2\",\"initiatedBy\":\"${3:-script}\"}" \
+    "$CHAOS_URL/ops/services/$1/deploys" >/dev/null || return 1
+  wait_for "deploy $1 $2" 180 sh -c "[ \"\$(curl -sf $CHAOS_URL/ops/services | jq -r '.\"$1\" | select(.deployStatus==\"COMPLETED\") | .version')\" = '$2' ] && curl -sf http://localhost:$(svc_port "$1")/actuator/health/readiness"
+}
+
+svc_port() { case $1 in gateway) echo 8080;; orders) echo 8081;; payments) echo 8082;; inventory) echo 8083;; esac; }
