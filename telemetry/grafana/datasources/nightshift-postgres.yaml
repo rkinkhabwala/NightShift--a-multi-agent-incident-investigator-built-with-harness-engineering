@@ -1,0 +1,14 @@
+# Read-only view of the ops schema (deploy registry, config/flag history) for annotations.
+apiVersion: 1
+datasources:
+  - name: NightShift ops (Postgres)
+    uid: nightshift-ops
+    type: grafana-postgresql-datasource
+    url: postgres:5432
+    user: grafana_reader
+    jsonData:
+      database: nightshift
+      sslmode: disable
+      postgresVersion: 1600
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD
