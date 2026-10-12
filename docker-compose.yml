@@ -166,6 +166,22 @@ services:
     ports:
       - "127.0.0.1:8083:8083"
 
+  # --- target: load generator (pause with scripts/load.sh pause) -------------------------------
+  k6:
+    image: grafana/k6:2.3.0
+    profiles: [target]
+    mem_limit: 192m
+    restart: unless-stopped
+    command: ["run", "--quiet", "/scripts/steady.js"]
+    environment:
+      BASE_URL: http://gateway:8080
+      K6_RATE: ${K6_RATE:-8}
+    volumes:
+      - ./loadgen/k6:/scripts:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+
 volumes:
   releases:
   lgtm-data:
