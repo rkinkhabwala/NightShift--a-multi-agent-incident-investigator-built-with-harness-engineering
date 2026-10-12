@@ -1,0 +1,41 @@
+# Shared defaults for every target service. Each service imports this with
+#   spring.config.import: classpath:nightshift-common.yml
+spring:
+  application:
+    name: ${SERVICE:${spring.application.default-name:app}}
+  threads:
+    virtual:
+      enabled: false
+logging:
+  structured:
+    # JSON lines on stdout. The OpenTelemetry agent puts trace_id / span_id in the MDC,
+    # which the logstash format writes as top-level fields.
+    format:
+      console: logstash
+  level:
+    root: INFO
+management:
+  metrics:
+    # The OTel agent instruments HTTP/JVM itself. From Micrometer (bridged by the agent) we
+    # only want process.start.time / process.uptime, which is how restarts are detected.
+    enable:
+      all: false
+      process: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    service: ${SERVICE:unknown}
+    version: ${APP_VERSION:dev}
+server:
+  shutdown: graceful

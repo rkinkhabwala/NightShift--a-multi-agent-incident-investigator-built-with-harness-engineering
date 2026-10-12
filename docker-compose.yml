@@ -6,4 +6,56 @@
 # Every container has a mem_limit; the total must stay well inside Docker Desktop's 6 GB.
 name: nightshift
 
-services: {}
+x-jvm-service: &jvm-service
+  image: nightshift/target:dev
+  build:
+    context: ./target
+    dockerfile: docker/Dockerfile
+  profiles: [target]
+  restart: unless-stopped
+  mem_limit: 448m
+  volumes:
+    - releases:/releases
+  environment: &jvm-env
+    JAVA_OPTS: >-
+      -Xms128m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m
+      -Xss512k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+    OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    OTEL_METRIC_EXPORT_INTERVAL: "10000"
+    OTEL_BSP_SCHEDULE_DELAY: "2000"
+    OTEL_BLRP_SCHEDULE_DELAY: "2000"
+    OTEL_INSTRUMENTATION_MICROMETER_ENABLED: "true"
+
+services:
+  lgtm:
+    image: grafana/otel-lgtm:0.36.0
+    profiles: [telemetry]
+    mem_limit: 1792m
+    ports:
+      - "3000:3000"   # Grafana
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "9090:9090"   # Prometheus API
+      - "3100:3100"   # Loki API (not published by the image by default)
+      - "3200:3200"   # Tempo API
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      PROMETHEUS_EXTRA_ARGS: --storage.tsdb.retention.time=2d
+    volumes:
+      - ./telemetry/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro
+      - lgtm-data:/data
+
+  gateway:
+    <<: *jvm-service
+    environment:
+      <<: *jvm-env
+      SERVICE: gateway
+      BASELINE_VERSION: "2.0"
+    ports:
+      - "8080:8080"
+
+volumes:
+  releases:
+  lgtm-data:

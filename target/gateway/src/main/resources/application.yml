@@ -1,0 +1,7 @@
+spring:
+  config:
+    import: classpath:nightshift-common.yml
+  application:
+    default-name: gateway
+server:
+  port: 8080
