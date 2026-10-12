@@ -8,10 +8,10 @@ class PricingServiceTest {
 
     @Test
     void adjustmentIsBoundedToTenPercent() {
-        // total 900 over 90 days -> 70/week on average
-        assertThat(PricingService.adjust(1000, new PricingService.Demand(70, 900, 0))).isEqualTo(1000);
-        assertThat(PricingService.adjust(1000, new PricingService.Demand(7000, 900, 0))).isEqualTo(1100);
-        assertThat(PricingService.adjust(1000, new PricingService.Demand(0, 900, 0))).isEqualTo(900);
+        // total 1150 over 115 days -> 70/week on average
+        assertThat(PricingService.adjust(1000, new PricingService.Demand(70, 1150, 0))).isEqualTo(1000);
+        assertThat(PricingService.adjust(1000, new PricingService.Demand(7000, 1150, 0))).isEqualTo(1100);
+        assertThat(PricingService.adjust(1000, new PricingService.Demand(0, 1150, 0))).isEqualTo(900);
     }
 
     @Test

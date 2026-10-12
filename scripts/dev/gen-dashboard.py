@@ -37,7 +37,7 @@ ts("Request rate", [(f'sum by (service_name) (rate(http_server_request_duration_
 ts("5xx error rate", [(f'sum by (service_name) (rate(http_server_request_duration_seconds_count{{{SVC},{APP_ROUTES},http_response_status_code=~"5.."}}[1m]))', "{{service_name}}")], "reqps", 12)
 y += 8
 ts("5xx ratio", [(f'sum by (service_name) (rate(http_server_request_duration_seconds_count{{{SVC},{APP_ROUTES},http_response_status_code=~"5.."}}[2m])) / sum by (service_name) (rate(http_server_request_duration_seconds_count{{{SVC},{APP_ROUTES}}}[2m]))', "{{service_name}}")], "percentunit", 0, desc="HighErrorRate fires above 5 %")
-ts("p95 latency", [(f'histogram_quantile(0.95, sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket{{{SVC},{APP_ROUTES}}}[1m])))', "{{service_name}}")], "s", 12, desc="HighLatencyP95 fires above 1 s")
+ts("p95 latency", [(f'histogram_quantile(0.95, sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket{{{SVC},{APP_ROUTES}}}[1m])))', "{{service_name}}")], "s", 12, desc="HighLatencyP95 fires above 300 ms")
 y += 8
 row("Runtime")
 ts("JVM heap used", [(f'sum by (service_name) (jvm_memory_used_bytes{{{SVC},jvm_memory_type="heap"}})', "{{service_name}} used"),

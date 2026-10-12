@@ -46,7 +46,7 @@ services:
   lgtm:
     image: grafana/otel-lgtm:0.36.0
     profiles: [telemetry]
-    mem_limit: 1792m
+    mem_limit: 2048m
     ports:
       - "3000:3000"   # Grafana
       - "4317:4317"   # OTLP gRPC
@@ -71,7 +71,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.34.1
     profiles: [telemetry]
-    mem_limit: 48m
+    mem_limit: 64m
     command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
     volumes:
       - ./telemetry/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro

@@ -252,7 +252,7 @@
     {
       "type": "timeseries",
       "title": "p95 latency",
-      "description": "HighLatencyP95 fires above 1 s",
+      "description": "HighLatencyP95 fires above 300 ms",
       "gridPos": {
         "x": 12,
         "y": 9,

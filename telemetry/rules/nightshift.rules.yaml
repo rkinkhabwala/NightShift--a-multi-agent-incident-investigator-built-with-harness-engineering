@@ -25,12 +25,12 @@ groups:
         expr: |
           histogram_quantile(0.95,
             sum by (service_name, le) (rate(http_server_request_duration_seconds_bucket{http_route!~"/actuator.*|/admin.*|/internal.*"}[3m]))
-          ) > 1
+          ) > 0.3
         for: 2m
         labels:
           severity: page
         annotations:
-          summary: "{{ $labels.service_name }} p95 latency is {{ $value | humanizeDuration }} (> 1 s)"
+          summary: "{{ $labels.service_name }} p95 latency is {{ $value | humanizeDuration }} (> 300 ms)"
 
       - alert: ServiceRestarting
         # Two or more restarts of the same version in 10 minutes: a restart loop. Counting per
@@ -43,13 +43,15 @@ groups:
           summary: "{{ $labels.service_name }} restarted {{ $value }} times in 10 minutes"
 
       - alert: JvmHeapHigh
+        # Heap above 90 % of max at any point in the last 2 minutes. A leak that ends in an
+        # OOM restart every ~90 s never stays high long enough for a plain "for:" clause.
         expr: |
-          sum by (service_name) (jvm_memory_used_bytes{jvm_memory_type="heap"})
-          /
-          sum by (service_name) (jvm_memory_limit_bytes{jvm_memory_type="heap"})
-          > 0.85
-        for: 1m
+          max_over_time((
+            sum by (service_name) (jvm_memory_used_bytes{jvm_memory_type="heap"})
+            /
+            sum by (service_name) (jvm_memory_limit_bytes{jvm_memory_type="heap"})
+          )[2m:15s]) > 0.9
         labels:
           severity: warning
         annotations:
-          summary: "{{ $labels.service_name }} heap is {{ $value | humanizePercentage }} of max"
+          summary: "{{ $labels.service_name }} heap reached {{ $value | humanizePercentage }} of max in the last 2 minutes"
