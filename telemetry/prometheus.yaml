@@ -5,6 +5,13 @@ global:
   scrape_native_histograms: true
   # nightshift: rule evaluation cadence for the alert rules below
   evaluation_interval: 15s
+# nightshift: alert rules and Alertmanager
+rule_files:
+  - /otel-lgtm/rules/*.yaml
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
 otlp:
   keep_identifying_resource_attributes: true
   # Recommended attributes to be promoted to labels.

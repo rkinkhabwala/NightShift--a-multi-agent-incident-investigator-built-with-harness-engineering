@@ -27,6 +27,6 @@ verify:
   settle_seconds: 30
   alert_received: {alertname: HighErrorRate, service: gateway}
   prom:
-    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="gateway",http_response_status_code=~"5.."}[2m])) / sum(rate(http_server_request_duration_seconds_count{service_name="gateway"}[2m]))'
+    - query: '(sum(rate(http_server_request_duration_seconds_count{service_name="gateway",http_response_status_code=~"5.."}[2m])) or vector(0)) / sum(rate(http_server_request_duration_seconds_count{service_name="gateway"}[2m]))'
       op: "<"
       value: 0.02

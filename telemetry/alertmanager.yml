@@ -1,0 +1,14 @@
+# Routes every alert to the NightShift alert receiver.
+# Phase 1: the chaos-controller webhook stub (logs and keeps the last 100 alerts).
+# Phase 2: point the url at the NightShift API (POST /api/alerts).
+route:
+  receiver: nightshift
+  group_by: [alertname, service_name]
+  group_wait: 10s
+  group_interval: 1m
+  repeat_interval: 1h
+receivers:
+  - name: nightshift
+    webhook_configs:
+      - url: http://chaos-controller:8090/ops/alerts
+        send_resolved: true
