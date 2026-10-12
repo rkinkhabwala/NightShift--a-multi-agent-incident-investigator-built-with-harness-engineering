@@ -28,6 +28,6 @@ verify:
       op: ">"
       value: 0.3
   loki:
-    - {query: '{service_name="orders"} |= "Connection is not available"', min_lines: 5}
+    - {query: '{service_name="orders"} | exception_type="java.sql.SQLTransientConnectionException"', min_lines: 5}
   config_history:
     - {service: orders, key: orders.db.pool.max, new_value: "1"}

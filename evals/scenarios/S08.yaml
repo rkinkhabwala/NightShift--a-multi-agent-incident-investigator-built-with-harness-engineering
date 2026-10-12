@@ -34,4 +34,4 @@ verify:
   loki:
     - {query: '{service_name="gateway"} |= "JWKS refresh skipped"', min_lines: 50}
   tempo:
-    - {query: '{resource.service.name="inventory" && span.db.system.name="postgresql" && duration > 400ms}', min_traces: 3}
+    - {query: '{resource.service.name="inventory" && span.db.system="postgresql" && duration > 400ms}', min_traces: 3}

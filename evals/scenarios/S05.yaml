@@ -26,6 +26,6 @@ verify:
       op: ">"
       value: 1.0
   tempo:
-    - {query: '{resource.service.name="orders" && span.db.query.text =~ ".*percentile_cont.*"}', min_traces: 3}
+    - {query: '{resource.service.name="orders" && span.db.statement =~ ".*percentile_cont.*"}', min_traces: 3}
   flag_history:
     - {service: orders, key: new_pricing, new_value: "true"}

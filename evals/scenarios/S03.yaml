@@ -27,4 +27,4 @@ verify:
       op: ">"
       value: 1.5
   tempo:
-    - {query: '{resource.service.name="inventory" && span.db.system.name="redis" && duration > 1s}', min_traces: 3}
+    - {query: '{resource.service.name="inventory" && span.db.system="redis" && duration > 1s}', min_traces: 3}

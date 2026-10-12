@@ -22,14 +22,14 @@ wait_for() {
 
 # prom_value <promql> : first sample value of an instant query, or empty.
 prom_value() {
-  curl -sfG "$PROM_URL/api/v1/query" --data-urlencode "query=$1" \
+  curl -sf -m 20 -G "$PROM_URL/api/v1/query" --data-urlencode "query=$1" \
     | jq -r '.data.result[0].value[1] // empty'
 }
 
 # loki_count <logql> [since-seconds] : number of log lines matching in the window.
 loki_count() {
   local since=${2:-300}
-  curl -sfG "$LOKI_URL/loki/api/v1/query_range" --data-urlencode "query=$1" \
+  curl -sf -m 30 -G "$LOKI_URL/loki/api/v1/query_range" --data-urlencode "query=$1" \
     --data-urlencode "start=$(( $(date +%s) - since ))000000000" --data-urlencode "limit=5000" \
     | jq '[.data.result[].values | length] | add // 0'
 }
@@ -37,7 +37,7 @@ loki_count() {
 # tempo_count <traceql> [since-seconds] : number of traces matching in the window.
 tempo_count() {
   local since=${2:-300}
-  curl -sfG "$TEMPO_URL/api/search" --data-urlencode "q=$1" \
+  curl -sf -m 30 -G "$TEMPO_URL/api/search" --data-urlencode "q=$1" \
     --data-urlencode "start=$(( $(date +%s) - since ))" --data-urlencode "end=$(date +%s)" \
     --data-urlencode "limit=100" | jq '.traces | length'
 }

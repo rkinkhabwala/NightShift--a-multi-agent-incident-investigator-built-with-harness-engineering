@@ -2,11 +2,11 @@ id: S04
 title: Inventory memory leak - heap growth and OOM restart loop
 description: >
   inventory's reservation audit trail stops releasing entries (hidden switch). The heap grows by
-  about 64 KB per reserved item until the JVM dies with OutOfMemoryError; the container restarts
+  about 256 KB per reserved item until the JVM dies with OutOfMemoryError; the container restarts
   and, because the leak is still there, the loop repeats every few minutes.
 fault: {type: memory_leak, service: inventory}
 inject:
-  - switch: {service: inventory, name: inventory.leak.kb-per-reservation, value: "64"}
+  - switch: {service: inventory, name: inventory.leak.kb-per-reservation, value: "256"}
   - switch: {service: inventory, name: inventory.leak, value: "on"}
 reset:
   - switch_clear: {service: inventory, name: inventory.leak}
@@ -24,7 +24,7 @@ red_herrings:
     entities: [payments]
 expected_alerts: [JvmHeapHigh, ServiceRestarting]
 verify:
-  settle_seconds: 420
+  settle_seconds: 480
   prom:
     - query: 'sum(changes(max by (service_name) (process_start_time_seconds{service_name="inventory"})[10m:15s]))'
       op: ">="
