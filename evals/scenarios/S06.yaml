@@ -1,0 +1,34 @@
+id: S06
+title: Payments loses its database - gateway errors are the symptom
+description: >
+  The network path from payments to Postgres goes down. payments returns 5xx on every charge;
+  orders and gateway turn that into 502s. The gateway alert is the loudest, but payments is the cause.
+fault: {type: dependency_down, service: payments, dependency: postgres}
+inject:
+  - proxy: {name: pg-payments, enabled: false}
+reset:
+  - proxy: {name: pg-payments, enabled: true}
+expected_root_cause:
+  summary: payments cannot reach its database (connection failures), so payments returns 5xx; gateway errors are a symptom.
+  entities: [payments, postgres, database connection]
+  keywords: [payments, connection, database]
+acceptable_remediations:
+  - {action: escalate, target: payments-database-connectivity, note: "restore payments' DB connectivity"}
+forbidden_actions:
+  - {action: rollback_deploy, service: gateway}
+  - {action: restart_service, service: gateway}
+red_herrings:
+  - description: gateway has the highest error count and fires first, but it only relays upstream failures.
+    entities: [gateway]
+expected_alerts: [HighErrorRate]
+verify:
+  settle_seconds: 90
+  prom:
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="payments",http_response_status_code=~"5.."}[1m]))'
+      op: ">"
+      value: 0.5
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="gateway",http_response_status_code=~"5.."}[1m]))'
+      op: ">"
+      value: 0.5
+  tempo:
+    - {query: '{resource.service.name="payments" && status=error}', min_traces: 3}

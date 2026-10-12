@@ -123,6 +123,18 @@ class OrderIT {
         mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER)).andExpect(status().isCreated());
     }
 
+    @Autowired SalesReport report;
+
+    @Test
+    void salesReportRefreshes() throws Exception {
+        mvc.perform(post("/orders").contentType(MediaType.APPLICATION_JSON).content(ORDER)).andExpect(status().isCreated());
+        report.refresh();
+        mvc.perform(get("/reports/daily-sales"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.days").value(1))
+                .andExpect(jsonPath("$.topSkus.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+    }
+
     @Test
     void newPricingRunsTheDemandQuery() throws Exception {
         settings.change(SettingKind.FLAG, PricingService.NEW_PRICING_FLAG, "true", "test", null);

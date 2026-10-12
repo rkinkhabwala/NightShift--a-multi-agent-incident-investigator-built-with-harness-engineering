@@ -50,6 +50,10 @@ public class ServiceClient {
         return client.get().uri(baseUrl(service) + "/admin/" + kind).retrieve().body(Map.class);
     }
 
+    public java.util.List<?> definitions(String service, String kind) {
+        return client.get().uri(baseUrl(service) + "/admin/" + kind + "/definitions").retrieve().body(java.util.List.class);
+    }
+
     public Map<?, ?> version(String service) {
         return client.get().uri(baseUrl(service) + "/admin/version").retrieve().body(Map.class);
     }

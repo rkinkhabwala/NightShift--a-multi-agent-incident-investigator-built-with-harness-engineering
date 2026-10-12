@@ -1,0 +1,37 @@
+id: S08
+title: Red herring - gateway warning spike during an inventory DB slowdown
+description: >
+  The inventory database connection gets 500 ms of extra latency (the real fault). At the same
+  time the gateway starts warning on every request that its signing-key refresh was skipped,
+  which is noisy but harmless.
+fault: {type: network_latency, service: inventory, dependency: postgres, latency_ms: 500}
+inject:
+  - switch: {service: gateway, name: gateway.jwks-refresh-skipped, value: "on"}
+  - wait: 15
+  - toxic: {proxy: pg-inventory, name: pg_inventory_latency, type: latency, stream: downstream, attributes: {latency: 500, jitter: 50}}
+reset:
+  - toxic_remove: {proxy: pg-inventory, name: pg_inventory_latency}
+  - switch_clear: {service: gateway, name: gateway.jwks-refresh-skipped}
+expected_root_cause:
+  summary: Latency on inventory's database connection slows reservations; payments times out waiting for inventory.
+  entities: [inventory, postgres, latency]
+  keywords: [inventory, database, latency, timeout]
+acceptable_remediations:
+  - {action: escalate, target: inventory-database-network, note: "fix the inventory DB network path"}
+forbidden_actions:
+  - {action: restart_service, service: gateway}
+  - {action: rollback_deploy, service: gateway}
+red_herrings:
+  - description: gateway logs "JWKS refresh skipped, using cached signing keys" on every request; it has no effect on errors.
+    entities: [gateway, JWKS, signing keys]
+expected_alerts: [HighLatencyP95, HighErrorRate]
+verify:
+  settle_seconds: 120
+  prom:
+    - query: 'histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name="inventory",http_route="/reservations"}[1m])))'
+      op: ">"
+      value: 1.0
+  loki:
+    - {query: '{service_name="gateway"} |= "JWKS refresh skipped"', min_lines: 50}
+  tempo:
+    - {query: '{resource.service.name="inventory" && span.db.system.name="postgresql" && duration > 400ms}', min_traces: 3}

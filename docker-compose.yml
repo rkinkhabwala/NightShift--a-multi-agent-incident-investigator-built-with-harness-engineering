@@ -58,9 +58,25 @@ services:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       PROMETHEUS_EXTRA_ARGS: --storage.tsdb.retention.time=2d
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?set GRAFANA_DB_PASSWORD in .env (see .env.example)}
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /otel-lgtm/grafana/conf/provisioning/dashboards/nightshift/nightshift-overview.json
     volumes:
       - ./telemetry/prometheus.yaml:/otel-lgtm/prometheus.yaml:ro
+      - ./telemetry/rules:/otel-lgtm/rules:ro
+      - ./telemetry/grafana/dashboards/provider.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/nightshift.yaml:ro
+      - ./telemetry/grafana/dashboards/nightshift-overview.json:/otel-lgtm/grafana/conf/provisioning/dashboards/nightshift/nightshift-overview.json:ro
+      - ./telemetry/grafana/datasources/nightshift-postgres.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/nightshift-postgres.yaml:ro
       - lgtm-data:/data
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    profiles: [telemetry]
+    mem_limit: 48m
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+    volumes:
+      - ./telemetry/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "127.0.0.1:9093:9093"
 
   # --- target: data stores and network fault proxy --------------------------------------------
   postgres:
@@ -71,6 +87,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-nightshift}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (see .env.example)}
       POSTGRES_DB: ${POSTGRES_DB:-nightshift}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:?set GRAFANA_DB_PASSWORD in .env (see .env.example)}
     command: >-
       postgres -c shared_buffers=64MB -c max_connections=60 -c work_mem=4MB
       -c max_parallel_workers_per_gather=0 -c log_min_duration_statement=1000
@@ -113,6 +130,10 @@ services:
       SERVICE: chaos-controller
       SERVER_PORT: "8090"
       BASELINE_VERSION: "1.0"
+      # Test infrastructure: keep injection activity out of the telemetry agents will read.
+      OTEL_JAVAAGENT_ENABLED: "false"
+      NIGHTSHIFT_SCENARIOS_DIR: /scenarios
+      NIGHTSHIFT_ALERT_RECEIVER_URL: http://chaos-controller:8090/ops/alerts
       JAVA_OPTS: >-
         -Xms64m -Xmx128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m
         -Xss512k -XX:+UseSerialGC

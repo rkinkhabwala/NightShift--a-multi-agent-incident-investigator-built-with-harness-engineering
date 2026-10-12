@@ -43,6 +43,7 @@ class DeployRegistryIT {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry r) {
         r.add("nightshift.releases-dir", () -> releases.toString());
+        r.add("nightshift.scenarios-dir", () -> "../../evals/scenarios");
         // No target services in this test: restart calls fail, which deploy tolerates by design.
         r.add("nightshift.service-host-suffix", () -> ".invalid");
     }

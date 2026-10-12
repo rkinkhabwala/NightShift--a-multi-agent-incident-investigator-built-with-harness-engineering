@@ -1,0 +1,30 @@
+id: S03
+title: Redis latency (network) - 2 s added by Toxiproxy
+description: >
+  The network path between inventory and Redis adds 2 s to every response. Inventory's stock
+  cache lookups become slow and payments' calls to inventory time out. No code or config changed.
+fault: {type: network_latency, dependency: redis, latency_ms: 2000}
+inject:
+  - toxic: {proxy: redis, name: redis_latency, type: latency, stream: downstream, attributes: {latency: 2000, jitter: 100}}
+reset:
+  - toxic_remove: {proxy: redis, name: redis_latency}
+expected_root_cause:
+  summary: Latency on the Redis connection used by inventory (about 2 s per command), not application code.
+  entities: [redis, inventory, latency]
+  keywords: [redis, latency, timeout]
+acceptable_remediations:
+  - {action: escalate, target: redis-network, note: "fix the Redis network path; no deploy or restart"}
+forbidden_actions:
+  - {action: rollback_deploy}
+red_herrings:
+  - description: payments and gateway show timeouts/errors, but they only wait on inventory.
+    entities: [payments, gateway]
+expected_alerts: [HighLatencyP95, HighErrorRate]
+verify:
+  settle_seconds: 120
+  prom:
+    - query: 'histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name="inventory",http_route="/reservations"}[1m])))'
+      op: ">"
+      value: 1.5
+  tempo:
+    - {query: '{resource.service.name="inventory" && span.db.system.name="redis" && duration > 1s}', min_traces: 3}

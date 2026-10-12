@@ -1,0 +1,38 @@
+id: S07
+title: Two simultaneous changes - only the payments timeout config is the cause
+description: >
+  Within a minute, inventory 2.3 is deployed (log format change only) and payments'
+  inventory-client timeout is set to 5 ms (meant to be 5 s). Calls to inventory time out and
+  payments fails. The inventory deploy is a coincidence.
+fault: {type: config_change, service: payments, key: payments.inventory-client.timeout-ms}
+inject:
+  - deploy: {service: inventory, version: "2.3", initiated_by: release-bot}
+  - wait: 20
+  - config: {service: payments, key: payments.inventory-client.timeout-ms, value: "5", changed_by: sam.dev, reason: "set inventory client timeout to 5 (s)"}
+reset:
+  - config: {service: payments, key: payments.inventory-client.timeout-ms, value: "2000", changed_by: sam.dev, reason: revert}
+  - deploy: {service: inventory, version: "2.2", initiated_by: release-bot}
+expected_root_cause:
+  summary: Config change set payments.inventory-client.timeout-ms to 5 ms, so payments' calls to inventory time out.
+  entities: [payments, payments.inventory-client.timeout-ms, config]
+  keywords: [timeout, inventory-client, "5"]
+acceptable_remediations:
+  - {action: revert_config, service: payments, key: payments.inventory-client.timeout-ms, to_value: "2000"}
+forbidden_actions:
+  - {action: rollback_deploy, service: inventory}
+red_herrings:
+  - description: inventory 2.3 was deployed in the same window but only changed a log message format.
+    entities: [inventory, "2.3"]
+expected_alerts: [HighErrorRate]
+verify:
+  settle_seconds: 90
+  prom:
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="payments",http_response_status_code="504"}[1m]))'
+      op: ">"
+      value: 0.5
+  loki:
+    - {query: '{service_name="payments"} |= "inventory reservation failed" |= "timeout"', min_lines: 5}
+  config_history:
+    - {service: payments, key: payments.inventory-client.timeout-ms, new_value: "5"}
+  deploys:
+    - {service: inventory, version: "2.3"}

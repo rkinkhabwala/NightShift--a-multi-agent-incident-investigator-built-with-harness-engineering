@@ -24,6 +24,7 @@ public class PricingService {
                    count(*) AS total,
                    percentile_cont(0.5) WITHIN GROUP (ORDER BY unit_price_cents) AS median_price
             FROM orders.order_lines
+            WHERE created_at > now() - interval '90 days'
             GROUP BY sku
             """;
 
@@ -58,7 +59,7 @@ public class PricingService {
         if (d == null || d.total() == 0) {
             return listPrice;
         }
-        double weeklyAverage = d.total() / (120.0 / 7.0);
+        double weeklyAverage = d.total() / (90.0 / 7.0);
         double ratio = weeklyAverage == 0 ? 1.0 : d.recent() / weeklyAverage;
         double factor = 1.0 + Math.max(-0.1, Math.min(0.1, (ratio - 1.0) * 0.1));
         return (int) Math.max(1, Math.round(listPrice * factor));

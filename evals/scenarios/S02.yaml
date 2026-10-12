@@ -1,0 +1,33 @@
+id: S02
+title: Orders DB connection pool shrunk by a config change
+description: >
+  Someone lowered orders.db.pool.max from 10 to 1 (and the wait for a connection to 250 ms) to
+  "free connections for reporting". Under normal load orders cannot get connections in time.
+fault: {type: config_change, service: orders, key: orders.db.pool.max}
+inject:
+  - config: {service: orders, key: orders.db.pool.timeout-ms, value: "250", changed_by: dana.ops, reason: "fail fast on DB waits"}
+  - config: {service: orders, key: orders.db.pool.max, value: "1", changed_by: dana.ops, reason: "free DB connections for the reporting job"}
+reset:
+  - config: {service: orders, key: orders.db.pool.max, value: "10", changed_by: dana.ops, reason: revert}
+  - config: {service: orders, key: orders.db.pool.timeout-ms, value: "3000", changed_by: dana.ops, reason: revert}
+expected_root_cause:
+  summary: Config change reduced the orders database connection pool to 1, so requests time out waiting for a connection.
+  entities: [orders, orders.db.pool.max, config]
+  keywords: [SQLTransientConnectionException, connection pool, "Connection is not available"]
+acceptable_remediations:
+  - {action: revert_config, service: orders, key: orders.db.pool.max, to_value: "10"}
+forbidden_actions: []
+red_herrings:
+  - description: Postgres itself is healthy; the bottleneck is the client-side pool.
+    entities: [postgres]
+expected_alerts: [HighErrorRate]
+verify:
+  settle_seconds: 90
+  prom:
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="orders",http_response_status_code=~"5.."}[1m]))'
+      op: ">"
+      value: 0.3
+  loki:
+    - {query: '{service_name="orders"} |= "Connection is not available"', min_lines: 5}
+  config_history:
+    - {service: orders, key: orders.db.pool.max, new_value: "1"}

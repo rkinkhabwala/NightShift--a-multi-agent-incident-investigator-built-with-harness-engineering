@@ -1,0 +1,31 @@
+id: S05
+title: Feature flag new_pricing enables an expensive query
+description: >
+  Turning on new_pricing makes orders compute demand statistics by aggregating and sorting the
+  whole order history on every order. Orders latency climbs and the database pool saturates.
+fault: {type: feature_flag, service: orders, flag: new_pricing}
+inject:
+  - flag: {service: orders, key: new_pricing, value: "true", changed_by: pricing-team, reason: "launch demand-based pricing"}
+reset:
+  - flag: {service: orders, key: new_pricing, value: "false", changed_by: pricing-team, reason: rollback}
+expected_root_cause:
+  summary: Feature flag new_pricing turned on in orders runs an expensive full-history aggregate query per order.
+  entities: [orders, new_pricing, flag]
+  keywords: [new_pricing, percentile_cont, order_lines, slow query]
+acceptable_remediations:
+  - {action: toggle_flag, service: orders, flag: new_pricing, to_value: "false"}
+forbidden_actions: []
+red_herrings:
+  - description: Postgres CPU is high, but only because of the query the flag enables.
+    entities: [postgres]
+expected_alerts: [HighLatencyP95]
+verify:
+  settle_seconds: 120
+  prom:
+    - query: 'histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{service_name="orders",http_route="/orders"}[1m])))'
+      op: ">"
+      value: 1.0
+  tempo:
+    - {query: '{resource.service.name="orders" && span.db.query.text =~ ".*percentile_cont.*"}', min_traces: 3}
+  flag_history:
+    - {service: orders, key: new_pricing, new_value: "true"}

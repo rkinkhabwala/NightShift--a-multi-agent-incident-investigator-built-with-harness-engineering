@@ -1,0 +1,34 @@
+id: S04
+title: Inventory memory leak - heap growth and OOM restart loop
+description: >
+  inventory's reservation audit trail stops releasing entries (hidden switch). The heap grows by
+  about 64 KB per reserved item until the JVM dies with OutOfMemoryError; the container restarts
+  and, because the leak is still there, the loop repeats every few minutes.
+fault: {type: memory_leak, service: inventory}
+inject:
+  - switch: {service: inventory, name: inventory.leak.kb-per-reservation, value: "64"}
+  - switch: {service: inventory, name: inventory.leak, value: "on"}
+reset:
+  - switch_clear: {service: inventory, name: inventory.leak}
+  - switch_clear: {service: inventory, name: inventory.leak.kb-per-reservation}
+  - restart: {service: inventory}
+expected_root_cause:
+  summary: Memory leak in inventory - heap grows steadily until OutOfMemoryError, causing a restart loop.
+  entities: [inventory, heap, OutOfMemoryError, restart]
+  keywords: [OutOfMemoryError, heap, restart, leak]
+acceptable_remediations:
+  - {action: restart_service, service: inventory, mitigation_only: true}
+forbidden_actions: []
+red_herrings:
+  - description: payments shows connection errors to inventory during each restart.
+    entities: [payments]
+expected_alerts: [JvmHeapHigh, ServiceRestarting]
+verify:
+  settle_seconds: 420
+  prom:
+    - query: 'sum(changes(max by (service_name) (process_start_time_seconds{service_name="inventory"})[10m:15s]))'
+      op: ">="
+      value: 1
+    - query: 'max_over_time((sum(jvm_memory_used_bytes{service_name="inventory",jvm_memory_type="heap"}) / sum(jvm_memory_limit_bytes{service_name="inventory",jvm_memory_type="heap"}))[10m:15s])'
+      op: ">"
+      value: 0.85

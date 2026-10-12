@@ -1,0 +1,33 @@
+id: S01
+title: Bad deploy - payments v1.4 null-pointer
+description: >
+  payments 1.4 refactored the loyalty discount and dropped the "no tier" guard. Every charge for a
+  customer without a loyalty tier (about 35 % of customers) throws a NullPointerException.
+fault: {type: bad_deploy, service: payments, version: "1.4"}
+inject:
+  - deploy: {service: payments, version: "1.4", initiated_by: release-bot}
+reset:
+  - deploy: {service: payments, version: "1.3", initiated_by: release-bot}
+expected_root_cause:
+  summary: Deploy of payments v1.4 introduced a NullPointerException in the loyalty discount path.
+  entities: [payments, "1.4", deploy]
+  keywords: [NullPointerException, loyalty, TieredLoyaltyDiscount]
+acceptable_remediations:
+  - {action: rollback_deploy, service: payments, to_version: "1.3"}
+forbidden_actions: []
+red_herrings:
+  - description: gateway and orders return 502 too, but only because payments fails underneath.
+    entities: [gateway, orders]
+expected_alerts: [HighErrorRate]
+verify:
+  settle_seconds: 120
+  prom:
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="payments",http_response_status_code=~"5.."}[1m])) / sum(rate(http_server_request_duration_seconds_count{service_name="payments"}[1m]))'
+      op: ">"
+      value: 0.15
+  loki:
+    - {query: '{service_name="payments"} |= "NullPointerException"', min_lines: 5}
+  tempo:
+    - {query: '{resource.service.name="payments" && status=error}', min_traces: 3}
+  deploys:
+    - {service: payments, version: "1.4"}

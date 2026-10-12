@@ -17,7 +17,7 @@ public class PaymentsApplication {
     @Bean
     SettingsCatalog settingsCatalog() {
         return SettingsCatalog.of(
-                SettingDefinition.intConfig("payments.inventory-client.timeout-ms", 2000, 10, 30000,
+                SettingDefinition.intConfig("payments.inventory-client.timeout-ms", 2000, 1, 30000,
                         "Read timeout for calls to inventory /reservations"),
                 SettingDefinition.intConfig("payments.decline-threshold-cents", 100000, 100, 10000000,
                         "Charges above this amount are declined by the risk rule"));

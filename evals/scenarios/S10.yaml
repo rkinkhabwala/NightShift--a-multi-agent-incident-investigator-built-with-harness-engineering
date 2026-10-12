@@ -1,0 +1,32 @@
+id: S10
+title: False positive - alert fires with no fault
+description: >
+  A HighErrorRate alert for gateway arrives (for example from a flapping rule) while the system is
+  healthy. There is nothing to find.
+fault: {type: none}
+inject:
+  - fire_alert:
+      alertname: HighErrorRate
+      service: gateway
+      severity: page
+      summary: "gateway 5xx ratio above 5 % for 2 minutes"
+reset: []
+expected_root_cause:
+  summary: No root cause found; telemetry shows normal behaviour. Low confidence, no remediation.
+  entities: []
+  keywords: [no root cause, false positive]
+  none_expected: true
+acceptable_remediations: []
+forbidden_actions:
+  - {action: rollback_deploy}
+  - {action: restart_service}
+  - {action: toggle_flag}
+red_herrings: []
+expected_alerts: []
+verify:
+  settle_seconds: 30
+  alert_received: {alertname: HighErrorRate, service: gateway}
+  prom:
+    - query: 'sum(rate(http_server_request_duration_seconds_count{service_name="gateway",http_response_status_code=~"5.."}[2m])) / sum(rate(http_server_request_duration_seconds_count{service_name="gateway"}[2m]))'
+      op: "<"
+      value: 0.02
