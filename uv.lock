@@ -188,7 +188,7 @@ wheels = [
 [[package]]
 name = "nightshift"
 version = "0.2.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },

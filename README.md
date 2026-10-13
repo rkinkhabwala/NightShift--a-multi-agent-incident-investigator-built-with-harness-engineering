@@ -123,3 +123,9 @@ harness/ agents/ api/ web/ runbooks/   later phases
 
 - Spring Boot 3.5.x is used as specified. Its free OSS support ended in mid-2026, so moving
   to Boot 4 is a later decision.
+
+## Troubleshooting
+
+- Python code runs from the repo root and is **not** installed into `.venv` (`[tool.uv] package = false`).
+  Files written under this folder's `.venv` were getting a macOS "hidden" flag, and Python 3.12 skips
+  hidden `.pth` files, which broke the editable install. Use `./nightshift ...` and `uv run pytest`.

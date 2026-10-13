@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS evidence (
     created_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS evidence_incident ON evidence (incident_id, seq);
+CREATE VIRTUAL TABLE IF NOT EXISTS past_incidents USING fts5(
+    incident_id UNINDEXED, title, root_cause, remediation, report
+);
 CREATE TABLE IF NOT EXISTS eval_runs (
     id           TEXT PRIMARY KEY,
     started_at   TEXT NOT NULL,

@@ -50,6 +50,11 @@ public class ServiceClient {
         return client.get().uri(baseUrl(service) + "/admin/" + kind).retrieve().body(Map.class);
     }
 
+    public java.util.List<?> history(String service, String kind, String since) {
+        return client.get().uri(baseUrl(service) + "/admin/" + kind + "/history?since={since}&limit=200", since)
+                .retrieve().body(java.util.List.class);
+    }
+
     public java.util.List<?> definitions(String service, String kind) {
         return client.get().uri(baseUrl(service) + "/admin/" + kind + "/definitions").retrieve().body(java.util.List.class);
     }

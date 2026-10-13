@@ -74,6 +74,22 @@ public class OpsController {
         return ResponseEntity.accepted().body(Map.of("service", service, "status", "restarting"));
     }
 
+    /**
+     * Read-only view of a service's runtime config or feature flags, with change history. This is
+     * how NightShift tools read config/flags without network access to the target services.
+     */
+    @GetMapping("/services/{service}/{kind:config|flags}")
+    public Map<String, Object> settings(@PathVariable String service, @PathVariable String kind,
+                                        @RequestParam(required = false) Instant since) {
+        manifest.service(service);
+        Instant from = since != null ? since : Instant.now().minus(Duration.ofHours(24));
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("service", service);
+        out.put("current", services.settings(service, kind));
+        out.put("history", services.history(service, kind, from.toString()));
+        return out;
+    }
+
     /** Current version, last start and recent restarts per service. */
     @GetMapping("/services")
     public Map<String, Object> services() {

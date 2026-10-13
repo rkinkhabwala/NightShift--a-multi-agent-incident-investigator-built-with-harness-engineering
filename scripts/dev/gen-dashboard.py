@@ -62,7 +62,7 @@ panels.append({
 y += 8
 panels.append({
     "type": "logs", "title": "Errors and warnings", "datasource": LOKI, "gridPos": {"x": 0, "y": y, "w": 24, "h": 10},
-    "targets": [{"refId": "A", "expr": '{service_name=~"$service"} | detected_level=~"error|warn"'}],
+    "targets": [{"refId": "A", "expr": '{service_name=~"$service"} | detected_level=~"(?i)error|severe|fatal|warn|warning"'}],
     "options": {"showTime": True, "wrapLogMessage": True, "sortOrder": "Descending", "enableLogDetails": True},
 })
 y += 10
