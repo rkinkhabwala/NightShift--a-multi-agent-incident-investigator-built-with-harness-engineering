@@ -65,6 +65,7 @@ services:
       - ./telemetry/rules:/otel-lgtm/rules:ro
       - ./telemetry/grafana/dashboards/provider.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/nightshift.yaml:ro
       - ./telemetry/grafana/dashboards/nightshift-overview.json:/otel-lgtm/grafana/conf/provisioning/dashboards/nightshift/nightshift-overview.json:ro
+      - ./telemetry/grafana/dashboards/nightshift-harness.json:/otel-lgtm/grafana/conf/provisioning/dashboards/nightshift/nightshift-harness.json:ro
       - ./telemetry/grafana/datasources/nightshift-postgres.yaml:/otel-lgtm/grafana/conf/provisioning/datasources/nightshift-postgres.yaml:ro
       - lgtm-data:/data
 

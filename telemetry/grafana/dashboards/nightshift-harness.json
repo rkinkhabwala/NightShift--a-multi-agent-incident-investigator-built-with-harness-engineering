@@ -1,0 +1,253 @@
+{
+  "uid": "nightshift-harness",
+  "title": "NightShift - Harness",
+  "tags": [
+    "nightshift"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Agent runs by status",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (status) (increase(nightshift_agent_runs_total[$__range]))",
+          "legendFormat": "{{status}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Budget-exceeded rate",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(nightshift_agent_runs_total{status=\"BUDGET_EXCEEDED\"}[$__range])) / sum(increase(nightshift_agent_runs_total[$__range]))",
+          "legendFormat": "budget exceeded"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Tool error rate",
+      "description": "Unknown tools, invalid arguments, rejected writes and failed queries, over all tool calls",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(nightshift_tool_errors_total[$__range])) / sum(increase(nightshift_tool_calls_total[$__range]))",
+          "legendFormat": "tool errors"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Tokens per run",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (kind) (increase(nightshift_tokens_total[$__range])) / scalar(sum(increase(nightshift_agent_runs_total[$__range])))",
+          "legendFormat": "{{kind}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Wall clock per run (p50 / p95)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(nightshift_agent_wall_seconds_bucket[30m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(nightshift_agent_wall_seconds_bucket[30m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Steps per run (p50 / max bucket)",
+      "description": "",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(nightshift_agent_steps_bucket[30m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(nightshift_agent_steps_bucket[30m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Incident investigations (traces)",
+      "datasource": {
+        "type": "tempo",
+        "uid": "tempo"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "limit": 50,
+          "tableType": "traces",
+          "query": "{resource.service.name=\"nightshift-harness\" && name=\"incident\"}"
+        }
+      ]
+    }
+  ]
+}
