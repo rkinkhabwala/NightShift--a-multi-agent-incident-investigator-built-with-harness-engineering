@@ -1,0 +1,53 @@
+# NightShift harness configuration. Every value here is logged with each eval run.
+
+[model]
+provider = "ollama"
+name = "qwen3:8b"
+base_url = "http://localhost:11434"
+num_ctx = 16384            # always sent explicitly; Ollama's default (4096) silently truncates
+keep_alive = "30m"         # keep the model loaded between agents and runs
+seed = 42                  # fixed for repeatable evals
+request_timeout_s = 600
+max_retries = 3            # on 429/5xx/connection errors, with exponential backoff
+
+[roles.generalist]
+temperature = 0.2
+think = false              # thinking is for commander/verifier (Phase 3); measured as an ablation
+max_steps = 12             # specialists get 8 (spec §5.9); the generalist does all four investigators' work
+max_input_tokens = 200000  # sum of prompt tokens over the run
+wall_clock_s = 900
+max_tool_calls_per_step = 4
+
+[context]
+compaction_ratio = 0.6     # compact older tool results above 60 % of num_ctx
+chars_per_token = 3.5      # estimate before Ollama reports prompt_eval_count
+
+[tools]
+log_sample_lines = 20
+log_top_signatures = 8
+metric_max_series = 12
+trace_max_results = 20
+default_window_minutes = 30
+
+[snapshot]
+enabled = true
+window_minutes = 30
+
+[endpoints]
+prometheus = "http://localhost:9090"
+loki = "http://localhost:3100"
+tempo = "http://localhost:3200"
+ops = "http://localhost:8090"          # chaos controller: only /ops/* read paths are reachable from tools
+chaos = "http://localhost:8090"        # eval runner only (inject/reset, ground truth)
+
+[tracing]
+enabled = true
+otlp_endpoint = "http://localhost:4318"
+service_name = "nightshift-harness"
+
+[store]
+path = "data/nightshift.db"
+
+[eval]
+alert_wait_extra_s = 180   # beyond the scenario's settle_seconds
+baseline_timeout_s = 720

@@ -31,3 +31,6 @@ scripts/out/
 .vscode/
 *.iml
 .DS_Store
+
+# NightShift harness runtime data
+data/
