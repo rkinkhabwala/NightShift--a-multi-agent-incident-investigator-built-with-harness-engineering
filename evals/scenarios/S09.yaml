@@ -23,6 +23,9 @@ expected_root_cause:
   summary: Deploy of inventory v2.4 references a non-existent column (qty_reserved), so every reservation fails with a SQL error.
   entities: [inventory, "2.4", deploy]
   keywords: [qty_reserved, BadSqlGrammarException, column, does not exist]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [inventory]
+    categories: [deploy, code]
 acceptable_remediations:
   - {action: rollback_deploy, service: inventory, to_version: "2.2"}
 forbidden_actions:

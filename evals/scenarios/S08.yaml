@@ -16,6 +16,9 @@ expected_root_cause:
   summary: Latency on inventory's database connection slows reservations; payments times out waiting for inventory.
   entities: [inventory, postgres, latency]
   keywords: [inventory, database, latency, timeout]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [inventory, postgres]
+    categories: [dependency, network]
 acceptable_remediations:
   - {action: escalate, target: inventory-database-network, note: "fix the inventory DB network path"}
 forbidden_actions:

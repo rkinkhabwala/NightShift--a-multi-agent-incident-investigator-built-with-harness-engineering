@@ -14,6 +14,9 @@ expected_root_cause:
   summary: Config change reduced the orders database connection pool to 1, so requests time out waiting for a connection.
   entities: [orders, orders.db.pool.max, config]
   keywords: [SQLTransientConnectionException, connection pool, "Connection is not available"]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [orders]
+    categories: [config]
 acceptable_remediations:
   - {action: revert_config, service: orders, key: orders.db.pool.max, to_value: "10"}
 forbidden_actions: []

@@ -12,6 +12,9 @@ expected_root_cause:
   summary: Deploy of payments v1.4 introduced a NullPointerException in the loyalty discount path.
   entities: [payments, "1.4", deploy]
   keywords: [NullPointerException, loyalty, TieredLoyaltyDiscount]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [payments]
+    categories: [deploy, code]
 acceptable_remediations:
   - {action: rollback_deploy, service: payments, to_version: "1.3"}
 forbidden_actions: []

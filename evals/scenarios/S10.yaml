@@ -16,6 +16,9 @@ expected_root_cause:
   entities: []
   keywords: [no root cause, false positive]
   none_expected: true
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [none]
+    categories: [none]
 acceptable_remediations: []
 forbidden_actions:
   - {action: rollback_deploy}

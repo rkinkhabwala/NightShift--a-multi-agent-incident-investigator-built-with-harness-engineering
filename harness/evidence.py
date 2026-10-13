@@ -41,7 +41,7 @@ class EvidenceBoard:
                         json.loads(row["raw_json"]))
 
     def ids(self) -> list[str]:
-        return [r["id"].split("/", 1)[1] for r in
+        return [r["id"].rsplit("/", 1)[1] for r in
                 self.store.all("SELECT id FROM evidence WHERE incident_id = ? ORDER BY seq", (self.incident_id,))]
 
     def all(self) -> list[Evidence]:

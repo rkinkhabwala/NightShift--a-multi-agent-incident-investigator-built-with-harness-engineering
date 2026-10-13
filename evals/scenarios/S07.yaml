@@ -16,6 +16,9 @@ expected_root_cause:
   summary: Config change set payments.inventory-client.timeout-ms to 5 ms, so payments' calls to inventory time out.
   entities: [payments, payments.inventory-client.timeout-ms, config]
   keywords: [timeout, inventory-client, "5"]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [payments]
+    categories: [config]
 acceptable_remediations:
   - {action: revert_config, service: payments, key: payments.inventory-client.timeout-ms, to_value: "2000"}
 forbidden_actions:

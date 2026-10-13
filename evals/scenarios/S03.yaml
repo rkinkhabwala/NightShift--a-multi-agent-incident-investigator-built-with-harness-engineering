@@ -12,6 +12,9 @@ expected_root_cause:
   summary: Latency on the Redis connection used by inventory (about 2 s per command), not application code.
   entities: [redis, inventory, latency]
   keywords: [redis, latency, timeout]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [redis, inventory]
+    categories: [dependency, network]
 acceptable_remediations:
   - {action: escalate, target: redis-network, note: "fix the Redis network path; no deploy or restart"}
 forbidden_actions:

@@ -77,7 +77,7 @@ def create_app(settings: config.Settings | None = None, store: Store | None = No
                 "alert": json.loads(r["alert_json"]),
                 "report": json.loads(r["report_json"]) if r["report_json"] else None,
                 "runs": [dict(x) for x in runs],
-                "evidence": [{"id": e["id"].split("/", 1)[1], "tool": e["tool"], "args": json.loads(e["args_json"]),
+                "evidence": [{"id": e["id"].rsplit("/", 1)[1], "tool": e["tool"], "args": json.loads(e["args_json"]),
                               "summary": json.loads(e["summary_json"])} for e in evidence]}
 
     @app.get("/healthz")

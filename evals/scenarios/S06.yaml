@@ -12,6 +12,9 @@ expected_root_cause:
   summary: payments cannot reach its database (connection failures), so payments returns 5xx; gateway errors are a symptom.
   entities: [payments, postgres, database connection]
   keywords: [payments, connection, database]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [payments, postgres]
+    categories: [dependency, network]
 acceptable_remediations:
   - {action: escalate, target: payments-database-connectivity, note: "restore payments' DB connectivity"}
 forbidden_actions:

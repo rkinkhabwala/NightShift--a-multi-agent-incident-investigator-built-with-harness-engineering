@@ -16,6 +16,9 @@ expected_root_cause:
   summary: Memory leak in inventory - heap grows steadily until OutOfMemoryError, causing a restart loop.
   entities: [inventory, heap, OutOfMemoryError, restart]
   keywords: [OutOfMemoryError, heap, restart, leak]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [inventory]
+    categories: [resource, code]
 acceptable_remediations:
   - {action: restart_service, service: inventory, mitigation_only: true}
 forbidden_actions: []

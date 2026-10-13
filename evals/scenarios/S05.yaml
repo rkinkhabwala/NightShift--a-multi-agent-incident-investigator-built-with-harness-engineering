@@ -12,6 +12,9 @@ expected_root_cause:
   summary: Feature flag new_pricing turned on in orders runs an expensive unindexed co-purchase aggregate query per order line.
   entities: [orders, new_pricing, flag]
   keywords: [new_pricing, percentile_cont, order_lines, slow query]
+  grading:   # used by evals/scoring.py: report root_cause.service and .category must be in these
+    services: [orders]
+    categories: [flag]
 acceptable_remediations:
   - {action: toggle_flag, service: orders, flag: new_pricing, to_value: "false"}
 forbidden_actions: []
