@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS incidents (
@@ -48,6 +48,19 @@ CREATE TABLE IF NOT EXISTS evidence (
     created_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS evidence_incident ON evidence (incident_id, seq);
+CREATE TABLE IF NOT EXISTS alerts (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    received_at  TEXT NOT NULL,
+    alertname    TEXT NOT NULL,
+    service      TEXT,
+    status       TEXT NOT NULL,              -- firing | resolved
+    starts_at    TEXT,
+    fingerprint  TEXT NOT NULL,              -- alertname/service/startsAt: Alertmanager re-sends the same alert
+    duplicate    INTEGER NOT NULL DEFAULT 0,
+    payload_json TEXT NOT NULL,              -- the whole webhook group payload, for the investigation
+    incident_id  TEXT
+);
+CREATE INDEX IF NOT EXISTS alerts_received ON alerts (received_at);
 CREATE VIRTUAL TABLE IF NOT EXISTS past_incidents USING fts5(
     incident_id UNINDEXED, title, root_cause, remediation, report
 );

@@ -134,7 +134,7 @@ services:
       # Test infrastructure: keep injection activity out of the telemetry agents will read.
       OTEL_JAVAAGENT_ENABLED: "false"
       NIGHTSHIFT_SCENARIOS_DIR: /scenarios
-      NIGHTSHIFT_ALERT_RECEIVER_URL: http://chaos-controller:8090/ops/alerts
+      NIGHTSHIFT_ALERT_RECEIVER_URL: http://chaos-controller:8090/ops/alerts,http://host.docker.internal:8000/api/alerts
       JAVA_OPTS: >-
         -Xms64m -Xmx128m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=32m
         -Xss512k -XX:+UseSerialGC

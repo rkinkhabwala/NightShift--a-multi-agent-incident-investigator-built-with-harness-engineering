@@ -10,24 +10,37 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Posts an Alertmanager-format webhook payload to the alert receiver (the stub now, the
- * NightShift API from Phase 2). Used by S10, where an alert fires without any fault.
+ * Posts an Alertmanager-format webhook payload to the alert receivers (comma-separated URLs: the
+ * stub and the NightShift API). Succeeds if at least one receiver accepts it. Used by S10, where an
+ * alert fires without any fault.
  */
 @Component
 public class AlertSender {
 
     private final RestClient client;
-    private final String receiverUrl;
+    private final List<String> receiverUrls;
 
-    public AlertSender(@Value("${nightshift.alert-receiver-url:http://localhost:8090/ops/alerts}") String receiverUrl) {
-        this.client = RestClient.create();
-        this.receiverUrl = receiverUrl;
+    public AlertSender(@Value("${nightshift.alert-receiver-url:http://localhost:8090/ops/alerts}") String receiverUrls) {
+        org.springframework.http.client.SimpleClientHttpRequestFactory f = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        f.setConnectTimeout(2000);
+        f.setReadTimeout(5000);
+        this.client = RestClient.builder().requestFactory(f).build();
+        this.receiverUrls = java.util.Arrays.stream(receiverUrls.split(",")).map(String::trim).filter(u -> !u.isEmpty()).toList();
     }
 
     public void fire(String alertname, String service, String severity, String summary) {
-        client.post().uri(receiverUrl).contentType(MediaType.APPLICATION_JSON)
-                .body(payload(alertname, service, severity, summary, Instant.now()))
-                .retrieve().toBodilessEntity();
+        Map<String, Object> body = payload(alertname, service, severity, summary, Instant.now());
+        List<String> failures = new java.util.ArrayList<>();
+        for (String url : receiverUrls) {
+            try {
+                client.post().uri(url).contentType(MediaType.APPLICATION_JSON).body(body).retrieve().toBodilessEntity();
+            } catch (RuntimeException e) {
+                failures.add(url + ": " + e.getMessage());
+            }
+        }
+        if (failures.size() == receiverUrls.size()) {
+            throw new IllegalStateException("no alert receiver accepted the alert: " + failures);
+        }
     }
 
     static Map<String, Object> payload(String alertname, String service, String severity, String summary, Instant now) {

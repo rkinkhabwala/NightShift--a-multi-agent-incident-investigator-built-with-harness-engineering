@@ -69,6 +69,12 @@ class TracingConfig(_Strict):
     service_name: str = "nightshift-harness"
 
 
+class ApiConfig(_Strict):
+    host: str = "0.0.0.0"
+    port: int = 8000
+    auto_investigate: bool = False
+
+
 class StoreConfig(_Strict):
     path: str
 
@@ -86,6 +92,7 @@ class Settings(_Strict):
     snapshot: SnapshotConfig
     endpoints: EndpointsConfig
     tracing: TracingConfig
+    api: ApiConfig = ApiConfig()
     store: StoreConfig
     eval: EvalConfig
 

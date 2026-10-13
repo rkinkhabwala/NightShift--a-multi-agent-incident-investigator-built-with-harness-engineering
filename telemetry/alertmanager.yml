@@ -1,14 +1,22 @@
-# Routes every alert to the NightShift alert receiver.
-# Phase 1: the chaos-controller webhook stub (logs and keeps the last 100 alerts).
-# Phase 2: point the url at the NightShift API (POST /api/alerts).
+# Routes every alert to both receivers:
+#  - nightshift-api: the NightShift API on the host (POST /api/alerts), which starts investigations
+#  - stub: the chaos-controller webhook stub (logs and keeps the last 100), used by verify-scenarios.sh
 route:
-  receiver: nightshift
+  receiver: stub
   group_by: [alertname, service_name]
   group_wait: 10s
   group_interval: 1m
   repeat_interval: 1h
+  routes:
+    - receiver: nightshift-api
+      continue: true
+    - receiver: stub
 receivers:
-  - name: nightshift
+  - name: nightshift-api
+    webhook_configs:
+      - url: http://host.docker.internal:8000/api/alerts
+        send_resolved: true
+  - name: stub
     webhook_configs:
       - url: http://chaos-controller:8090/ops/alerts
         send_resolved: true

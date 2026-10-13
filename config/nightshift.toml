@@ -45,6 +45,11 @@ enabled = true
 otlp_endpoint = "http://localhost:4318"
 service_name = "nightshift-harness"
 
+[api]
+host = "0.0.0.0"           # Alertmanager (in Docker) reaches it at host.docker.internal:8000
+port = 8000
+auto_investigate = false   # Phase 2: the eval runner starts investigations, so runs never compete for Ollama
+
 [store]
 path = "data/nightshift.db"
 
